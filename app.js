@@ -38,6 +38,28 @@ const STOPWORDS = new Set([
 ]);
 const isStopWord = (w="") => STOPWORDS.has(w.toLowerCase());
 
+// ==== MOTIVATION QUOTES (random each load) ====
+const QUOTES = [
+  "The secret of getting ahead is getting started. — Mark Twain",
+  "It always seems impossible until it’s done. — Nelson Mandela",
+  "Don’t watch the clock; do what it does. Keep going. — Sam Levenson",
+  "Success is the sum of small efforts, repeated day in and day out. — R. Collier",
+  "Dream big. Start small. Act now.",
+  "You don’t have to be great to start, but you have to start to be great. — Zig Ziglar",
+  "Quality is not an act, it is a habit. — Aristotle",
+  "The best way out is always through. — Robert Frost",
+  "Action is the foundational key to all success. — Pablo Picasso",
+  "Everything you can imagine is real. — Pablo Picasso",
+  "Make it work. Make it right. Make it fast. — Kent Beck",
+  "Believe you can and you’re halfway there. — Theodore Roosevelt"
+];
+function setRandomQuote(){
+  const el = document.getElementById('motivation-quote');
+  if(!el) return;
+  const q = QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  el.textContent = q;
+}
+
 // ==== DOM ====
 const openBuilderBtn = document.getElementById("open-builder"),
       builderModal = document.getElementById("builder-modal"),
@@ -71,7 +93,7 @@ const openBuilderBtn = document.getElementById("open-builder"),
 
 let DATASET=[],ORDER=[],qIndex=0,score=0,CURRENT_MODE="words";
 
-// ==== Default đề (tải lúc mở trang) ====
+// ==== Default đề ====
 const DEFAULT_WORDS = unique([
   "abandon","frugal","resilient","candid","pragmatic",
   "gregarious","ornate","rejuvenate","coherent","tenacious"
@@ -94,11 +116,7 @@ const LS_KEY = 'vq_last_dataset_v1';
 function saveLastSet(dataset, source='unknown'){
   try{
     if(!Array.isArray(dataset) || dataset.length < 4) return;
-    const payload = {
-      dataset,
-      source,
-      createdAt: new Date().toISOString()
-    };
+    const payload = { dataset, source, createdAt: new Date().toISOString() };
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
   }catch{}
 }
@@ -108,20 +126,15 @@ function loadLastSet(){
     if(!txt) return null;
     const obj = JSON.parse(txt);
     if(!obj || !Array.isArray(obj.dataset) || obj.dataset.length < 4) return null;
-    // chuẩn hóa tối thiểu
     const ds = obj.dataset.filter(p=>p && p.word && (p.meaning || (p.meanings&&p.meanings.length)));
     if(ds.length < 4) return null;
     return { dataset: ds, meta: { source: obj.source, createdAt: obj.createdAt } };
-  }catch{
-    return null;
-  }
+  }catch{ return null; }
 }
 
 // ==== modal ====
 const openModal=(el)=>el.setAttribute("aria-hidden","false");
 const closeModal=(el)=>el.setAttribute("aria-hidden","true");
-
-// Clear builder khi mở/chuyển mode
 function clearBuilderInputs(message = 'Dán nội dung rồi bấm “Tạo đề từ dữ liệu”.') {
   if (taMain) taMain.value = "";
   if (extractPreview) extractPreview.textContent = "";
@@ -311,7 +324,7 @@ if (btnBuild) btnBuild.onclick=async()=>{
     return;
   }
   DATASET=pairs;
-  saveLastSet(DATASET, 'builder');   // <== lưu bộ đề gần nhất
+  saveLastSet(DATASET, 'builder');
   startQuiz('Đề tùy chỉnh ('+pairs.length+' mục)');
   builderStatus.textContent='Đã tạo đề.';
   closeModal(builderModal);
@@ -436,10 +449,10 @@ document.addEventListener('keydown',e=>{
 if (restartBtn) restartBtn.onclick=()=>{startQuiz();closeModal(resultsModal);};
 if (restartInlineBtn) restartInlineBtn.onclick=()=>{startQuiz();};
 
-// ==== Khởi tạo: ưu tiên khôi phục bộ đề gần nhất ====
+// ==== Khởi tạo: khôi phục bộ gần nhất; set quote; nếu không có thì build default ====
 async function initDefaultQuiz(){
+  setRandomQuote(); // <<== random câu động lực mỗi lần vào
   try{
-    // 1) Thử khôi phục
     const restored = loadLastSet();
     if (restored) {
       DATASET = restored.dataset;
@@ -447,21 +460,19 @@ async function initDefaultQuiz(){
       return;
     }
 
-    // 2) Không có -> build đề mặc định
+    // Build đề mặc định
     wordEl.textContent = "Đang tải đề mặc định…";
     progressBar.style.width='0%';
     progressText.textContent = "Đang chuẩn bị…";
     let pairs = await buildPairsFromWords(DEFAULT_WORDS);
 
-    // nếu Wiktionary không trả đủ, fallback sang cứng
     if (!needAtLeastFour(pairs)) {
       pairs = DEFAULT_FALLBACK_PAIRS;
     }
     DATASET = pairs;
-    saveLastSet(DATASET, 'default');   // <== lưu đề mặc định
+    saveLastSet(DATASET, 'default');
     startQuiz('Đề mặc định ('+DATASET.length+' mục)');
   }catch{
-    // nếu lỗi nặng, dùng fallback
     DATASET = DEFAULT_FALLBACK_PAIRS;
     saveLastSet(DATASET, 'default-fallback');
     startQuiz('Đề mặc định (fallback)');

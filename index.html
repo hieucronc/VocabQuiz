@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="vi">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,6 +9,7 @@
   <script defer src="https://unpkg.com/compromise@14.14.2/builds/compromise.min.js"></script>
   <script defer src="app.js"></script>
 </head>
+
 <body>
   <div class="app">
     <header class="panel header">
@@ -15,7 +17,9 @@
         <span class="logo">VQ</span>
         <div class="stack">
           <h1>VocabQuiz</h1>
-          <div class="sub">Made by Hieuhehe</div>
+          <div class="sub">
+            <a href="https://www.facebook.com/hiuhehe/" target="_blank">Made by Hiuhehe</a>
+          </div>
         </div>
       </div>
       <div class="controls">
@@ -26,7 +30,9 @@
 
     <main class="panel main" id="quiz-panel">
       <div class="progress-wrap">
-        <div class="progress"><div class="bar" id="progress-bar"></div></div>
+        <div class="progress">
+          <div class="bar" id="progress-bar"></div>
+        </div>
         <div class="progress-text" id="progress-text">Câu 0 trên 0</div>
       </div>
 
@@ -43,9 +49,11 @@
       </section>
     </main>
 
-    <!-- Footer hài hước -->
+    <!-- Footer: câu tạo động lực (random, gradient nhiều màu) -->
     <footer class="panel footer">
-      <div class="funny">Ý kiến? Search Facebook: <span class="funny-chip">hiuhehe</span></div>
+      <div class="motivation">
+        <span id="motivation-quote" class="motivation-chip">Loading motivation…</span>
+      </div>
     </footer>
   </div>
 
@@ -68,7 +76,9 @@ resilient
             <button class="mode" id="mode-pairs" aria-pressed="false" data-ph="abandon : từ bỏ; bỏ rơi
 frugal : tiết kiệm; thanh đạm
 resilient : kiên cường; nhanh hồi phục">Cặp TỪ : NGHĨA (VI)</button>
-            <button class="mode" id="mode-paragraph" aria-pressed="false" data-ph="Dán đoạn văn tiếng Anh — hệ thống sẽ trích từ quan trọng rồi tra nghĩa tiếng Việt trên Wiktionary.">ĐOẠN VĂN → trích TỪ</button>
+            <button class="mode" id="mode-paragraph" aria-pressed="false"
+              data-ph="Dán đoạn văn tiếng Anh — hệ thống sẽ trích từ quan trọng rồi tra nghĩa tiếng Việt trên Wiktionary.">ĐOẠN
+              VĂN → trích TỪ</button>
           </div>
           <button class="btn subtle" id="load-sample" title="Điền ví dụ">Tải ví dụ</button>
         </div>
@@ -115,4 +125,5 @@ resilient
     </div>
   </div>
 </body>
+
 </html>
