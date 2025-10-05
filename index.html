@@ -1,58 +1,118 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VocabQuiz</title>
-  <meta name="description" content="Accessible vocabulary quiz that loads vocab.json or a user-selected JSON file." />
+  <title>VocabQuiz – Wiktionary (VI)</title>
   <link rel="stylesheet" href="style.css" />
+  <script defer src="https://unpkg.com/compromise@14.14.2/builds/compromise.min.js"></script>
+  <script defer src="app.js"></script>
 </head>
 <body>
-  <div class="app" id="app">
-    <header class="panel" aria-label="Quiz controls and status">
-      <div class="title" aria-live="polite" aria-atomic="true">
+  <div class="app">
+    <header class="panel header">
+      <div class="title">
         <span class="logo">VQ</span>
-        <span>VocabQuiz</span>
-        <span class="badge" id="dataset-badge">Default dataset</span>
+        <div class="stack">
+          <h1>VocabQuiz</h1>
+          <div class="sub">Made by Hieuhehe</div>
+        </div>
       </div>
       <div class="controls">
-        <label class="file-input btn btn-accent" aria-label="Choose a JSON file with vocabulary pairs">
-          <input id="file-input" type="file" accept="application/json" />
-          <span>Load JSON…</span>
-        </label>
-        <button class="btn" id="reset-default" type="button" aria-label="Reset to default dataset">Reset to Default</button>
-        <span class="status" id="status-text">Shortcuts: 1–4 to answer, R to restart</span>
+        <button class="btn glow" id="open-builder" aria-haspopup="dialog">➕ Thêm từ…</button>
+        <span class="status">Phím tắt: 1–4 chọn đáp án, R làm lại</span>
       </div>
     </header>
 
-    <main class="panel" id="quiz-panel" role="main">
-      <div class="progress-wrap" aria-label="Quiz progress">
-        <div class="progress" aria-hidden="true"><div class="bar" id="progress-bar"></div></div>
-        <div class="progress-text" id="progress-text" aria-live="polite">Question 0 of 0</div>
+    <main class="panel main" id="quiz-panel">
+      <div class="progress-wrap">
+        <div class="progress"><div class="bar" id="progress-bar"></div></div>
+        <div class="progress-text" id="progress-text">Câu 0 trên 0</div>
       </div>
 
-      <section class="quiz" id="quiz" aria-labelledby="word" role="group">
-        <h2 class="word" id="word">Loading…</h2>
+      <section class="quiz" id="quiz">
+        <h2 class="word" id="word">Đang tải đề mặc định…</h2>
         <div class="options" id="options"></div>
-        <div id="live-status" class="visually-hidden" aria-live="polite"></div>
-      </section>
 
-      <section class="results" id="results" hidden>
-        <h2 class="word">Results</h2>
-        <div class="score" id="score-text">0 / 0</div>
-        <p id="results-note" class="status"></p>
-        <div class="results-actions">
-          <button class="btn btn-accent" id="restart-btn" type="button" aria-label="Restart quiz (shortcut R)">Restart (R)</button>
+        <!-- Nút làm lại cố định dưới đáp án -->
+        <div class="row center static-restart">
+          <button class="btn glow" id="restart-inline">⟲ Làm lại</button>
         </div>
+
+        <div id="live-status" class="visually-hidden" aria-live="polite"></div>
       </section>
     </main>
 
-    <footer class="panel" aria-label="Footer info">
-      <span class="status">Học tiếng Anh</span>
-      <span class="status">50 cành 1 tháng</span>
+    <!-- Footer hài hước -->
+    <footer class="panel footer">
+      <div class="funny">Ý kiến? Search Facebook: <span class="funny-chip">hiuhehe</span></div>
     </footer>
   </div>
 
-  <script src="app.js"></script>
+  <!-- Modal thêm từ -->
+  <div class="modal" id="builder-modal" aria-hidden="true">
+    <div class="backdrop" id="modal-backdrop"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head">
+        <h3 id="modal-title">Thêm từ cho đề</h3>
+        <button class="btn close" id="modal-close" aria-label="Đóng">✕</button>
+      </div>
+
+      <div class="grid modal-body">
+        <div class="row space">
+          <div class="modes" role="toolbar" aria-label="Chế độ nhập">
+            <button class="mode" id="mode-words" aria-pressed="true" data-ph="abandon
+frugal
+resilient
+…">Danh sách TỪ</button>
+            <button class="mode" id="mode-pairs" aria-pressed="false" data-ph="abandon : từ bỏ; bỏ rơi
+frugal : tiết kiệm; thanh đạm
+resilient : kiên cường; nhanh hồi phục">Cặp TỪ : NGHĨA (VI)</button>
+            <button class="mode" id="mode-paragraph" aria-pressed="false" data-ph="Dán đoạn văn tiếng Anh — hệ thống sẽ trích từ quan trọng rồi tra nghĩa tiếng Việt trên Wiktionary.">ĐOẠN VĂN → trích TỪ</button>
+          </div>
+          <button class="btn subtle" id="load-sample" title="Điền ví dụ">Tải ví dụ</button>
+        </div>
+
+        <label for="ta-main" class="label-strong">Nội dung</label>
+        <textarea id="ta-main" placeholder="abandon
+frugal
+resilient
+…"></textarea>
+
+        <div class="row" id="para-controls" hidden>
+          <label for="pick-count" class="status">Số từ tối đa cần trích</label>
+          <input id="pick-count" type="number" min="4" max="50" value="12" />
+          <span id="extract-preview" class="status"></span>
+        </div>
+
+        <div class="row">
+          <button class="btn glow" id="btn-build">Tạo đề từ dữ liệu</button>
+          <span class="status" id="builder-status">Dán nội dung rồi bấm “Tạo đề từ dữ liệu”.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal kết quả -->
+  <div class="modal" id="results-modal" aria-hidden="true">
+    <div class="backdrop" id="results-backdrop"></div>
+    <div class="modal-card wide" role="dialog" aria-modal="true" aria-labelledby="results-title">
+      <div class="modal-head">
+        <h3 id="results-title">Kết quả</h3>
+        <button class="btn close" id="results-close" aria-label="Đóng">✕</button>
+      </div>
+      <div class="grid modal-body">
+        <div class="score" id="score-text">0 / 0</div>
+        <p id="results-note" class="status"></p>
+
+        <!-- Bảng chi tiết từ -->
+        <div id="results-details" class="grid"></div>
+
+        <div class="row center">
+          <button class="btn glow" id="restart-btn">Làm lại (R)</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
