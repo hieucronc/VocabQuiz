@@ -182,3 +182,26 @@ select,input[type=number]{
 
 .visually-hidden{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
 @media (prefers-reduced-motion:reduce){.bar,.option,.btn,.motivation-chip{transition:none;animation:none}}
+/* === Fix scroll cho modal kết quả === */
+.modal-card{
+  /* đã có các thuộc tính khác rồi, bổ sung 3 dòng dưới: */
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body{
+  /* phần nội dung trong modal cuộn được */
+  overflow: auto;
+  min-height: 0; /* để flex không ép cao */
+  /* nếu muốn giới hạn thêm: */
+  /* max-height: calc(88vh - 70px);  */
+}
+
+/* Bảng kết quả: nếu rộng thì cuộn ngang */
+#results-details{
+  overflow: auto;
+}
+#results-details table{
+  min-width: 640px; /* để xuất hiện thanh cuộn ngang khi màn nhỏ */
+}
