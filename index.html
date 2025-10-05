@@ -14,7 +14,7 @@
   <div class="app">
     <header class="panel header">
       <div class="title">
-        <span class="logo">VQ</span>
+        <span class="logo">🤔</span>
         <div class="stack">
           <h1>VocabQuiz</h1>
           <div class="sub">
@@ -24,7 +24,6 @@
       </div>
       <div class="controls">
         <button class="btn glow" id="open-builder" aria-haspopup="dialog">➕ Thêm từ…</button>
-        <span class="status">Phím tắt: 1–4 chọn đáp án, R làm lại</span>
       </div>
     </header>
 
@@ -37,7 +36,12 @@
       </div>
 
       <section class="quiz" id="quiz">
-        <h2 class="word" id="word">Đang tải đề mặc định…</h2>
+        <div class="word-row">
+          <h2 class="word" id="word">Đang tải đề mặc định…</h2>
+          <button class="icon-btn" id="speak-btn" title="Nghe phát âm" aria-label="Nghe phát âm" hidden>🔊</button>
+          <span id="word-ipa" class="ipa"></span>
+        </div>
+
         <div class="options" id="options"></div>
 
         <!-- Nút làm lại cố định dưới đáp án -->

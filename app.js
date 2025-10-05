@@ -38,7 +38,7 @@ const STOPWORDS = new Set([
 ]);
 const isStopWord = (w="") => STOPWORDS.has(w.toLowerCase());
 
-// ==== MOTIVATION QUOTES (random each load) ====
+// ==== MOTIVATION QUOTES ====
 const QUOTES = [
   "The secret of getting ahead is getting started. — Mark Twain",
   "It always seems impossible until it’s done. — Nelson Mandela",
@@ -69,6 +69,8 @@ const openBuilderBtn = document.getElementById("open-builder"),
       resultsBackdrop = document.getElementById("results-backdrop"),
       resultsClose = document.getElementById("results-close"),
       wordEl = document.getElementById("word"),
+      wordIpaEl = document.getElementById("word-ipa"),
+      speakBtn = document.getElementById("speak-btn"),
       optionsEl = document.getElementById("options"),
       progressBar = document.getElementById("progress-bar"),
       progressText = document.getElementById("progress-text"),
@@ -92,6 +94,7 @@ const openBuilderBtn = document.getElementById("open-builder"),
       sampleBtn = document.getElementById("load-sample");
 
 let DATASET=[],ORDER=[],qIndex=0,score=0,CURRENT_MODE="words";
+let AUDIO_CACHE = {};
 
 // ==== Default đề ====
 const DEFAULT_WORDS = unique([
@@ -99,20 +102,20 @@ const DEFAULT_WORDS = unique([
   "gregarious","ornate","rejuvenate","coherent","tenacious"
 ]);
 const DEFAULT_FALLBACK_PAIRS = [
-  { word:"abandon", meaning:"từ bỏ; bỏ rơi", pos:"động từ", ipa:[], meanings:["từ bỏ; bỏ rơi"] },
-  { word:"frugal", meaning:"tiết kiệm; thanh đạm", pos:"tính từ", ipa:[], meanings:["tiết kiệm; thanh đạm"] },
-  { word:"resilient", meaning:"kiên cường; nhanh hồi phục", pos:"tính từ", ipa:[], meanings:["kiên cường; nhanh hồi phục"] },
-  { word:"candid", meaning:"thẳng thắn; thật thà", pos:"tính từ", ipa:[], meanings:["thẳng thắn; thật thà"] },
-  { word:"pragmatic", meaning:"thực dụng; thực tế", pos:"tính từ", ipa:[], meanings:["thực dụng; thực tế"] },
-  { word:"gregarious", meaning:"thích giao du; bầy đàn", pos:"tính từ", ipa:[], meanings:["thích giao du; bầy đàn"] },
-  { word:"ornate", meaning:"trang trí cầu kỳ", pos:"tính từ", ipa:[], meanings:["trang trí cầu kỳ"] },
-  { word:"rejuvenate", meaning:"trẻ hóa; hồi sinh", pos:"động từ", ipa:[], meanings:["trẻ hóa; hồi sinh"] },
-  { word:"coherent", meaning:"mạch lạc; chặt chẽ", pos:"tính từ", ipa:[], meanings:["mạch lạc; chặt chẽ"] },
-  { word:"tenacious", meaning:"kiên trì; bền bỉ", pos:"tính từ", ipa:[], meanings:["kiên trì; bền bỉ"] }
+  { word:"abandon", meaning:"từ bỏ; bỏ rơi", pos:"động từ", ipa:[], meanings:["từ bỏ; bỏ rơi"], audio:[] },
+  { word:"frugal", meaning:"tiết kiệm; thanh đạm", pos:"tính từ", ipa:[], meanings:["tiết kiệm; thanh đạm"], audio:[] },
+  { word:"resilient", meaning:"kiên cường; nhanh hồi phục", pos:"tính từ", ipa:[], meanings:["kiên cường; nhanh hồi phục"], audio:[] },
+  { word:"candid", meaning:"thẳng thắn; thật thà", pos:"tính từ", ipa:[], meanings:["thẳng thắn; thật thà"], audio:[] },
+  { word:"pragmatic", meaning:"thực dụng; thực tế", pos:"tính từ", ipa:[], meanings:["thực dụng; thực tế"], audio:[] },
+  { word:"gregarious", meaning:"thích giao du; bầy đàn", pos:"tính từ", ipa:[], meanings:["thích giao du; bầy đàn"], audio:[] },
+  { word:"ornate", meaning:"trang trí cầu kỳ", pos:"tính từ", ipa:[], meanings:["trang trí cầu kỳ"], audio:[] },
+  { word:"rejuvenate", meaning:"trẻ hóa; hồi sinh", pos:"động từ", ipa:[], meanings:["trẻ hóa; hồi sinh"], audio:[] },
+  { word:"coherent", meaning:"mạch lạc; chặt chẽ", pos:"tính từ", ipa:[], meanings:["mạch lạc; chặt chẽ"], audio:[] },
+  { word:"tenacious", meaning:"kiên trì; bền bỉ", pos:"tính từ", ipa:[], meanings:["kiên trì; bền bỉ"], audio:[] }
 ];
 
 // ==== localStorage ====
-const LS_KEY = 'vq_last_dataset_v1';
+//const LS_KEY = 'vq_last_dataset_v1';
 function saveLastSet(dataset, source='unknown'){
   try{
     if(!Array.isArray(dataset) || dataset.length < 4) return;
@@ -173,7 +176,7 @@ function parsePairs(t){
     const m=l.split(":");
     if(m.length>=2){
       const w=m.shift().trim(),mean=m.join(":").trim();
-      if(w && mean) o.push({word:w,meaning:mean});
+      if(w && mean) o.push({word:w,meaning:mean, audio:[], ipa:[], meanings:[mean]});
     }
   }
   return o;
@@ -233,6 +236,23 @@ function extractPOS(wikitext) {
   while ((m = re.exec(wikitext)) !== null) markers.push(m[1]);
   if (!markers.length) return null; const first = markers[0]; return POS_MAP[first] || first;
 }
+function extractAudioLinks(wikitext){
+  // tìm {{pron-audio|file=En-us-hello.ogg|...}}
+  const urls = [];
+  const re = /\{\{pron-audio\s*\|[^}]*\}\}/g;
+  let m;
+  while ((m = re.exec(wikitext)) !== null) {
+    const chunk = m[0];
+    const fm = chunk.match(/file\s*=\s*([^|\}\n\r]+)/i);
+    if (fm && fm[1]) {
+      const filename = cleanText(fm[1]);
+      // dùng Special:FilePath (Commons sẽ trả file gốc)
+      const url = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}`;
+      urls.push(url);
+    }
+  }
+  return [...new Set(urls)];
+}
 function extractViDefinitionsFromWikitext(wikitext) {
   const lines = wikitext.split(/\r?\n/); const defs = [];
   for (const line of lines) {
@@ -252,9 +272,10 @@ async function getVietnameseEntry(word) {
     const meanings = extractViDefinitionsFromWikitext(src);
     const pos = extractPOS(src);
     const ipa = extractIPA(src);
+    const audio = extractAudioLinks(src);
     if (meanings.length) {
       const compact = meanings.find(d => d.length <= 140) || meanings[0];
-      return { word, meaning: compact, meanings, pos, ipa };
+      return { word, meaning: compact, meanings, pos, ipa, audio };
     }
     return null;
   } catch { return null; }
@@ -298,6 +319,27 @@ function loadSample(){
 }
 if (sampleBtn) sampleBtn.onclick=loadSample;
 
+// ==== localStorage ====
+const LS_KEY = 'vq_last_dataset_v1';
+function saveLastSet(dataset, source='unknown'){
+  try{
+    if(!Array.isArray(dataset) || dataset.length < 4) return;
+    const payload = { dataset, source, createdAt: new Date().toISOString() };
+    localStorage.setItem(LS_KEY, JSON.stringify(payload));
+  }catch{}
+}
+function loadLastSet(){
+  try{
+    const txt = localStorage.getItem(LS_KEY);
+    if(!txt) return null;
+    const obj = JSON.parse(txt);
+    if(!obj || !Array.isArray(obj.dataset) || obj.dataset.length < 4) return null;
+    const ds = obj.dataset.filter(p=>p && p.word && (p.meaning || (p.meanings&&p.meanings.length)));
+    if(ds.length < 4) return null;
+    return { dataset: ds, meta: { source: obj.source, createdAt: obj.createdAt } };
+  }catch{ return null; }
+}
+
 // ==== nút tạo đề ====
 if (btnBuild) btnBuild.onclick=async()=>{
   let pairs=[];
@@ -307,7 +349,7 @@ if (btnBuild) btnBuild.onclick=async()=>{
     builderStatus.textContent='Đang lấy dữ liệu từ Wiktionary…';
     pairs=await buildPairsFromWords(ws);
   }else if(CURRENT_MODE==='pairs'){
-    pairs=parsePairs(taMain.value).map(p=>({ ...p, pos:null, ipa:[], meanings:[p.meaning] }));
+    pairs=parsePairs(taMain.value);
     if(!needAtLeastFour(pairs)){builderStatus.textContent='Cần ≥ 4 cặp hợp lệ.';return;}
   }else{
     const txt=taMain.value.trim();
@@ -345,11 +387,23 @@ function pickOptionsFor(i){
   return{word:c.word,options:shuffle([{text:correct,correct:true},...inc.map(t=>({text:t,correct:false}))])};
 }
 function renderQuestion(){
-  if (!DATASET.length) { wordEl.textContent = "Chưa có dữ liệu."; optionsEl.innerHTML=""; return; }
+  if (!DATASET.length) { wordEl.textContent = "Chưa có dữ liệu."; optionsEl.innerHTML=""; speakBtn.hidden = true; wordIpaEl.textContent=''; return; }
   const total=ORDER.length,cur=Math.min(qIndex+1,total);
   setProgress(cur-1,total);
+  const item=DATASET[ORDER[qIndex]];
   const {word,options}=pickOptionsFor(ORDER[qIndex]);
   wordEl.textContent=word;
+  // Hiển thị IPA (nếu có)
+  wordIpaEl.textContent = (item.ipa && item.ipa.length) ? `/${item.ipa[0]}/` : '';
+  // Nút phát âm nếu có audio
+  if (item.audio && item.audio.length) {
+    speakBtn.hidden = false;
+    speakBtn.onclick = ()=>playAudio(item.audio);
+  } else {
+    speakBtn.hidden = true;
+    speakBtn.onclick = null;
+  }
+
   optionsEl.innerHTML='';
   options.forEach((opt,i)=>{
     const w=document.createElement('div');
@@ -382,13 +436,32 @@ async function handleAnswer(wrap,isCorrect){
   if(qIndex>=ORDER.length)showResults();else renderQuestion();
 }
 
-// ==== results + details + link Wiktionary ====
+// ==== Audio playback ====
+function playAudio(list){
+  // ưu tiên cache Audio object
+  const key = list.join('|');
+  if (!AUDIO_CACHE[key]) {
+    // tạo hàng đợi thử lần lượt (nếu 1 file fail CORS/404 thì thử cái khác)
+    AUDIO_CACHE[key] = list.map(u => new Audio(u));
+  }
+  const arr = AUDIO_CACHE[key];
+  let i = 0;
+  const tryPlay = ()=>{
+    if (i >= arr.length) return;
+    const a = arr[i++];
+    a.currentTime = 0;
+    a.play().catch(()=>tryPlay());
+  };
+  tryPlay();
+}
+
+// ==== results + details + link Wiktionary + nút audio ====
 function wiktionaryLink(word){ return `https://vi.wiktionary.org/wiki/${encodeURIComponent(word)}`; }
 function renderResultsDetails(){
   const table = document.createElement('table');
   const thead = document.createElement('thead');
   const trh = document.createElement('tr');
-  ['Từ', 'Loại từ', 'IPA', 'Nghĩa'].forEach(h=>{
+  ['Từ', 'Loại từ', 'IPA / 🔊', 'Nghĩa'].forEach(h=>{
     const th=document.createElement('th'); th.textContent=h; trh.appendChild(th);
   });
   thead.appendChild(trh); table.appendChild(thead);
@@ -405,13 +478,25 @@ function renderResultsDetails(){
     tdWord.appendChild(a);
 
     const tdPos=document.createElement('td'); tdPos.textContent=item.pos || '';
-    const tdIpa=document.createElement('td'); tdIpa.textContent=(item.ipa && item.ipa.length)? item.ipa.join(' • ') : '';
+
+    const tdPron=document.createElement('td');
+    const spanIpa=document.createElement('span');
+    spanIpa.textContent=(item.ipa && item.ipa.length)? `/${item.ipa[0]}/` : '';
+    tdPron.appendChild(spanIpa);
+    if (item.audio && item.audio.length){
+      const b=document.createElement('button');
+      b.className='icon-btn'; b.textContent='🔊'; b.title='Nghe phát âm'; b.ariaLabel='Nghe phát âm';
+      b.style.marginLeft='8px';
+      b.onclick=()=>playAudio(item.audio);
+      tdPron.appendChild(b);
+    }
+
     const tdMean=document.createElement('td');
     const firstMean = item.meaning || (item.meanings?item.meanings[0]:'');
     tdMean.textContent = firstMean;
     tdMean.title = (item.meanings && item.meanings.length>1) ? item.meanings.join(' | ') : firstMean;
 
-    tr.append(tdWord,tdPos,tdIpa,tdMean);
+    tr.append(tdWord,tdPos,tdPron,tdMean);
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
@@ -428,6 +513,11 @@ function showResults(){
 }
 
 // ==== start/restart ====
+function setProgress(c,t){
+  const pct=t?(c/t)*100:0;
+  progressBar.style.width=clamp(pct,0,100)+'%';
+  progressText.textContent=`Câu ${c} trên ${t}`;
+}
 function startQuiz(note){
   if (!DATASET.length) return;
   score=0;qIndex=0;ORDER=shuffle([...Array(DATASET.length).keys()]);
@@ -451,7 +541,7 @@ if (restartInlineBtn) restartInlineBtn.onclick=()=>{startQuiz();};
 
 // ==== Khởi tạo: khôi phục bộ gần nhất; set quote; nếu không có thì build default ====
 async function initDefaultQuiz(){
-  setRandomQuote(); // <<== random câu động lực mỗi lần vào
+  setRandomQuote();
   try{
     const restored = loadLastSet();
     if (restored) {

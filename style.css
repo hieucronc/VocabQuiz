@@ -38,7 +38,7 @@ body{
 }
 .stack h1{font-size:1.15rem;margin:0}
 .sub{color:var(--muted);font-size:.9rem;margin-top:2px}
-.controls{display:flex;gap:10px;align-items:center;mflex-wrap:wrap}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .status{color:var(--muted);font-size:.92rem}
 .sub a {
   background:linear-gradient(
@@ -86,7 +86,18 @@ body{
 }
 .progress-text{color:var(--muted)}
 .quiz{display:grid;gap:16px}
-.word{font-size:clamp(1.6rem,4.8vw,2.1rem);font-weight:900}
+
+/* Word row with audio & IPA */
+.word-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.word{font-size:clamp(1.6rem,4.8vw,2.1rem);font-weight:900;margin:0}
+.icon-btn{
+  border:1px solid rgba(255,255,255,.12);
+  background:#13264a;color:var(--text);
+  height:36px;min-width:36px;border-radius:10px;cursor:pointer;font-size:16px;
+}
+.icon-btn[hidden]{display:none}
+.icon-btn:hover{background:#193263}
+.ipa{color:var(--muted);font-size:.95rem}
 
 /* Options */
 .options{display:grid;gap:12px;grid-template-columns:1fr}
@@ -129,7 +140,7 @@ body{
 .mode{
   background:linear-gradient(180deg,#142858,#0f1d40);
   border:1px solid rgba(255,255,255,.14);
-  color:#fff; /* chữ trắng */
+  color:#fff;
   padding:8px 12px;border-radius:11px;cursor:pointer;font-weight:700
 }
 .mode[aria-pressed="true"]{outline:2px solid var(--accent)}
@@ -157,10 +168,7 @@ select,input[type=number]{
 .footer{display:flex;justify-content:center;align-items:center}
 .motivation{font-weight:800;font-size:1rem;letter-spacing:.2px;text-align:center}
 .motivation-chip{
-  background:linear-gradient(
-    90deg,
-    #22d3ee,#60a5fa,#a78bfa,#f472b6,#f59e0b,#10b981,#22d3ee
-  );
+  background:linear-gradient(90deg,#22d3ee,#60a5fa,#a78bfa,#f472b6,#f59e0b,#10b981,#22d3ee);
   background-size:500% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;
   padding:0 .2rem;
